@@ -70,9 +70,7 @@ training_data = training_data[, sensor_related_Variable]
 From among `r ncol(training_data)` variables present in the `training_data` set, some variables have missing values, **NA**, terms 
 and should be excluded from the `training_data` set.
 
-```{r}
-missing_count = sapply(training_data, function(x) {sum(is.na(x))}) # Creates a vector of all column variabe and sums the number of NA values
-```
+
 ```{r}
 NA_col = names(missing_count[missing_count > 0]) #Vector with all the columns that has NA values
 ```
@@ -86,9 +84,6 @@ names(training_data)
 
 Similarly, for the `predication_data` set or valiadtion(to be predicted by the model later is)
 
-```{r}
-sensor_related_Variable = grep(pattern = "_belt|_arm|_dumbbell|_forearm", names(predication_data))
-```
 ```{r results = "hide"}
 length(sensor_related_Variable) 
 ```
@@ -128,11 +123,7 @@ library(randomForest)
 ```
 
 Now, we build the prediction model using Random Forest.
-```{r}
-model_RF <- randomForest(classe~.,   data=training)
-predictions <- predict(model_RF, testing)
-confusionMatrix(predictions, testing$classe)
-```
+
 
 It shows that the accuracy of Random forest model is about `99.5%` with an expected sample error rate about `0.5%`.
 
