@@ -1,0 +1,179 @@
+---
+title: "Practical Machine Learning Final Project"
+author: "Tedros Gebregergs"
+date: "October 24, 2020"
+output: html_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+
+# Background
+
+Using devices such as Jawbone Up, Nike FuelBand, and Fitbit it is now possible to collect a large amount of data about personal activity relatively inexpensively. These type of devices are part of the quantified self movement - a group of enthusiasts who take measurements about themselves regularly to improve their health, to find patterns in their behavior, or because they are tech geeks. One thing that people regularly do is quantify how much of a particular activity they do, but they rarely quantify how well they do it. In this project, your goal will be to use data from accelerometers on the belt, forearm, arm, and dumbell of 6 participants. They were asked to perform barbell lifts correctly and incorrectly in 5 different ways. More information is available from the website here: [http://web.archive.org/web/20161224072740/http:/groupware.les.inf.puc-rio.br/har](http://web.archive.org/web/20161224072740/http:/groupware.les.inf.puc-rio.br/har) (see the section on the Weight Lifting Exercise Dataset).
+
+Hence, this project builds a predication model to know how a certain user 
+is lifting weights based on data obtained from an accelerometer. The feature is class variable with values(A,B,C,D,E)
+
+## Data
+
+The training data for this project are available here:
+ [https://d396qusza40orc.cloudfront.net/predmachlearn/pml-training.csv](https://d396qusza40orc.cloudfront.net/predmachlearn/pml-training.csv)
+
+The test data are available here:
+  
+  [https://d396qusza40orc.cloudfront.net/predmachlearn/pml-testing.csv](https://d396qusza40orc.cloudfront.net/predmachlearn/pml-testing.csv)
+
+### Getting Data
+After downloading and setting the working directory to the data, and then read as
+
+The file `pml-training` will served as our training set. The file `pml-testing` is a data set 
+without the classes, in other word, we will predict the classes based on our model.
+
+```{r, message=FALSE, warning = FALSE}
+library(caret)
+library(rpart)
+library(randomForest)
+```
+
+```{r}
+training_data <- read.csv("pml-training.csv",na.strings = c("NA", ""))
+predication_data <- read.csv("pml-testing.csv")
+```
+
+
+Here, `training_data` is the data which uses our model to learn or build and the `predication_data` is for validation purpose(to predict the feature variable, which is `class`)
+
+### Data preprocessing
+
+
+To build the model we use `training_data`. 
+```{r results = "hide"}
+dim(training_data)
+```
+
+Some variables(column) are  not a sensor readings. Let's say the first seven variables are related to identfican and hence not important for predication model'
+
+So, we will select variables related to sensor reading and these includes in the column varaible 
+`_belt, _arm, _dumbbell , _forearm`. And the last feature variable `classe`.
+```{r results = "hide"}
+sensor_related_Variable = grep(pattern = "_belt|_arm|_dumbbell|_forearm|classe",names(training_data))
+length(sensor_related_Variable)
+```
+```{r}
+training_data = training_data[, sensor_related_Variable]
+```
+
+
+From among `r ncol(training_data)` variables present in the `training_data` set, some variables have missing values, **NA**, terms 
+and should be excluded from the `training_data` set.
+
+```{r}
+missing_count = sapply(training_data, function(x) {sum(is.na(x))}) # Creates a vector of all column variabe and sums the number of NA values
+```
+```{r}
+NA_col = names(missing_count[missing_count > 0]) #Vector with all the columns that has NA values
+```
+To remove those columns from the training set
+```{r}
+training_data = training_data[, !names(training_data) %in% NA_col] 
+```
+```
+names(training_data)
+```
+
+Similarly, for the `predication_data` set or valiadtion(to be predicted by the model later is)
+
+```{r}
+sensor_related_Variable = grep(pattern = "_belt|_arm|_dumbbell|_forearm", names(predication_data))
+```
+```{r results = "hide"}
+length(sensor_related_Variable) 
+```
+```{r}
+predication_data = predication_data[, sensor_related_Variable]
+```
+```{r results = "hide"}
+dim(predication_data)
+```
+From among `r length(sensor_related_Variable)` variables present in the predication_data, variables with  missing data will be excluded as follow.
+```{r}
+missing_count = sapply(predication_data, function(x) {sum(is.na(x))}) 
+```
+```{r}
+NA_col = names(missing_count[missing_count > 0])
+predication_data = predication_data[, !names(predication_data) %in% NA_col] 
+```
+
+Now, let's create the data partitions using prob=`0.7` for training dat set and `30%` for testing. 
+But, for reproducibility 
+```{r}
+set.seed(1984)
+```
+```{r,echo=FALSE}
+training_data$classe=as.factor(training_data$classe)
+```
+```{r}
+Train <- createDataPartition(training_data$classe, p=0.7, list=FALSE)
+training <- training_data[Train, ]
+testing <- training_data[-Train, ]
+```
+
+### 1. Random Forest
+
+```{r message=FALSE}
+library(randomForest)
+```
+
+Now, we build the prediction model using Random Forest.
+```{r}
+model_RF <- randomForest(classe~.,   data=training)
+predictions <- predict(model_RF, testing)
+confusionMatrix(predictions, testing$classe)
+```
+
+It shows that the accuracy of Random forest model is about `99.5%` with an expected sample error rate about `0.5%`.
+
+Now, we will predict the unknown classes of the `predication_data` set.
+
+```{r}
+predictions <- predict(model_RF, predication_data)
+predictions
+```
+
+### 2. Decision tree
+```{r}
+model_DT <- rpart(classe~., data=training, method = "class")
+
+library(rattle)
+fancyRpartPlot(model_DT)
+```
+
+## Prediction using Decision tree
+
+
+```{r}
+predict_DT <- predict(model_DT, testing, type="class")
+confusionMatrix(testing$classe, predict_DT)
+```
+
+It shows that the accuracy of Decision tree model is about `72.5%` with an expected sample error rate about `27.5%`.
+
+## Choosing best Model(cross validation)
+
+the two proposed model to predict the feature variable class were Random forest and Dicision tree.
+the accuracy of Random forest is about `99.5%` and accacy of Dicision tree is `72.5%`, and hence Random forest is selcted as a best model. Therefor, Random forest will be used for a predication value of `unknown feature variable(output)`.
+
+Then, to predict the feature value of the 20 sample in the `predication_data` set,i.e., unknown feature variable(output)
+```{r}
+predict_test <- predict(model_RF, predication_data, type = "class")
+predict_test
+```
+
+This can be itnterpreted as the first sample output class is predicted to be B, the second sample did lift the weight correcty(A) and so on.
+
+
+
+.
