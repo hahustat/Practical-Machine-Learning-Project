@@ -342,7 +342,7 @@ confusionMatrix(testing$classe, predict_DT)</code></pre>
 </div>
 <div id="choosing-best-modelcross-validation" class="section level2">
 <h2>Choosing best Model(cross validation)</h2>
-<p>the two proposed model to predict the feature variable class were Random forest and Dicision tree. the accuracy of Random forest is about <code>99.5%</code> and accacy of Dicision tree is <code>72.5%</code>, and hence Random forest is selcted as a best model. Therefor, Random forest will be used for a predication value of <code>unknown feature variable(output)</code>.</p>
+<p>The two proposed model to predict the feature variable class were Random forest and Dicision tree. the accuracy of Random forest is about <code>99.5%</code> and accacy of Dicision tree is <code>72.5%</code>, and hence Random forest is selcted as a best model. Therefor, Random forest will be used for a predication value of <code>unknown feature variable(output)</code>.</p>
 <p>Then, to predict the feature value of the 20 sample in the <code>predication_data</code> set,i.e., unknown feature variable(output)</p>
 <pre class="r"><code>predict_test &lt;- predict(model_RF, predication_data, type = &quot;class&quot;)
 predict_test</code></pre>
